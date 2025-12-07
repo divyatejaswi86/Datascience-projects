@@ -1,0 +1,103 @@
+# @title convert csv into df
+import pandas as pd
+df = pd.read_csv('historical_data.csv')
+df
+------------------------------------------------------------
+# @title convert csv into df
+import pandas as pd
+df1 = pd.read_csv('fear_greed_index.csv')
+df1
+--------------------------------------------------------------
+# @title checking size of dataset of historical data
+print("no.of rows is ",df.shape[0])
+print("no.of columns is ",df.shape[1])
+
+# checking size of dataset of fear greed data
+print("no.of rows is ",df1.shape[0])
+print("no.of columns is ",df1.shape[1])
+----------------------------------------------------------
+# @title describing the historical data
+df.describe
+# @title describing fear greed data
+df1.describe()
+-----------------------------------------------------
+# @title information of historical table
+df.info()
+# @title information of fear and greed table
+df1.info()
+----------------------------------------------------
+# @title checking for null values historical data
+df.isnull().sum()
+# @title checking for null values fear and greed data
+df1.isnull().sum()
+-------------------------------------------------------
+# converting date to timestampIST
+df['date'] = pd.to_datetime(df['Timestamp IST'], format="%d-%m-%Y %H:%M").dt.date
+df1['date'] = pd.to_datetime(df1['date']).dt.date
+----------------------------------------------------------------------------
+# Select only the needed columns from fear_greed table
+sent = df1[['date', 'classification']]
+
+# Merge trade data (df) with sentiment data (sent)
+merged = df.merge(sent, on='date', how='left')
+
+# Look at the first rows to confirm merge success
+merged[['Timestamp IST', 'date', 'classification']].head()
+--------------------------------------------------------------------------------
+# Daily Total PnL by Sentiment:
+
+daily = merged.groupby(['date', 'classification'])['Closed PnL'].sum().reset_index()
+plt.figure(figsize=(10,4))
+for sentiment, group in daily.groupby('classification'):
+    plt.plot(group['date'], group['Closed PnL'],label=sentiment)
+plt.title("Daily Total PnL by Sentiment")
+plt.xlabel("Date")
+plt.ylabel("Total PnL")
+plt.show()
+----------------------------------------------------------------------
+# Average Profit of all trades that happened on Fear days:
+merged[merged['classification']=="Fear"]['Closed PnL'].mean()
+# Average Profit of all trades that happened on Greed days:
+merged[merged['classification']=="Greed"]['Closed PnL'].mean()
+-------------------------------------------------------------------------------
+# @title  Average Trade Volume / Size in fear 
+merged[merged['classification']=="Fear"]['Size USD'].mean()
+# @title  Average Trade Volume / Size in greed
+merged[merged['classification']=="Greed"]['Size USD'].mean()
+-----------------------------------------------------------------------------
+# Average Profit in Fear vs Greed:
+merged.groupby('classification')['Closed PnL'].mean().reset_index()
+
+# Average Profit in Fear vs Greed Visualization:
+import matplotlib.pyplot as plt
+merged.groupby('classification')['Closed PnL'].mean().plot(kind='bar')
+plt.title("Average Profit by Sentiment")
+plt.show()
+--------------------------------------------------------------------------
+# Average Risk (Size USD) in Fear vs Greed:
+merged.groupby('classification')['Size USD'].mean().reset_index()
+
+# Average Risk (Size USD) in Fear vs Greed Visualization:
+import matplotlib.pyplot as plt
+merged.groupby('classification')['Size USD'].mean().plot(kind='pie')
+plt.title("Average Profit by Sentiment")
+plt.show()
+---------------------------------------------------------------------------
+# Volume in Fear vs Greed:
+merged.groupby('classification')['Size USD'].sum().reset_index()
+
+# Volume in Fear vs Greed Visualization:
+import matplotlib.pyplot as plt
+merged.groupby('classification')['Size USD'].sum().plot(kind='line')
+plt.title("Average Profit by Sentiment")
+plt.show()
+---------------------------------------------------------------------
+# Number of trades in Fear vs Greed:
+merged['classification'].value_counts().reset_index()
+
+# Number of trades in Fear vs Greed visualization:
+merged['classification'].value_counts().plot(kind='bar', figsize=(5,4))
+plt.title("Number of Trades by Sentiment")
+plt.xlabel("Sentiment")
+plt.ylabel("Trade Count")
+plt.show()
